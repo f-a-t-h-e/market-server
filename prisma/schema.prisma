@@ -1,41 +1,41 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Product {
-  id         Int      @id @default(autoincrement())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  title      String   @db.VarChar(255)
-  details    String?
-  images     String[]
-  price      Int
-  categories String[]
-  published  Boolean  @default(false)
-  seller     Profile  @relation(fields: [sellerId], references: [id])
-  sellerId   Int
+generator client {
+  provider = "prisma-client-js"
+  // previewFeatures = []
 }
 
-model Profile {
-  id       Int     @id @default(autoincrement())
-  type     String  @db.VarChar(255)
-  bio      String?
-  products Product[]
-  user     User    @relation(fields: [userId], references: [id])
-  userId   Int     @unique
+generator dbml {
+  provider = "prisma-dbml-generator"
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  name     String?
-  profile  Profile?
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  password  String
+  firstname String?
+  lastname  String?
+  posts     Post[]
+  role      Role
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  published Boolean
+  title     String
+  content   String?
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  String?
+}
+
+enum Role {
+  ADMIN
+  USER
 }

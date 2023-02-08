@@ -1,29 +1,38 @@
-import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-
+import { Logger, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from 'nestjs-prisma';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { join } from 'path';
-import { UsersModule } from './modules/users/users.module';
-import { ProductsModule } from './modules/products/products.module';
-import { ProfileModule } from './modules/profile/profile.module';
+import { AppResolver } from './app.resolver';
+import { AuthModule } from 'src/auth/auth.module';
+import { UsersModule } from 'src/users/users.module';
+import { PostsModule } from 'src/posts/posts.module';
+import config from 'src/common/configs/config';
+import { loggingMiddleware } from 'src/common/middleware/logging.middleware';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { GqlConfigService } from './gql-config.service';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      // include: [], // This is for scanning specific modules only, instead of the whole app.
-      driver: ApolloDriver,
-      // debug: true,
-      // playground: true,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      // buildSchemaOptions: { dateScalarMode: 'timestamp' },
+    ConfigModule.forRoot({ isGlobal: true, load: [config] }),
+    PrismaModule.forRoot({
+      isGlobal: true,
+      prismaServiceOptions: {
+        middlewares: [loggingMiddleware(new Logger('PrismaMiddleware'))], // configure your prisma middleware
+      },
     }),
+
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      useClass: GqlConfigService,
+    }),
+
+    AuthModule,
     UsersModule,
-    ProductsModule,
-    ProfileModule,
+    PostsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AppResolver],
 })
 export class AppModule {}
